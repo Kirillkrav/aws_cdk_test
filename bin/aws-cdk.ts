@@ -1,21 +1,30 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { AwsCdkStack } from '../lib/aws-cdk-stack';
+import VPCStack from '../lib/vpc/default-vpc-1';
+import RedshiftFactoryStack from '../lib/databases/redshift/redshift-factory';
+import DocumentDBStack from '../lib/databases/document_db/documentdb';
+import DMSStack from '../lib/dms/dms-1';
 
 const app = new cdk.App();
-new AwsCdkStack(app, 'AwsCdkStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+// Initializing VPCStack
+const VPCStackInstance = new VPCStack(app, 'VPCStack2', {
+    // env uses default account and region from aws-cli config
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT,
+        region: process.env.CDK_DEFAULT_REGION
+    }
+},);
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+// Initializing RedshiftFactoryStack
+const RedshiftFactoryStackInstance = new RedshiftFactoryStack(app, 'RedshiftFactoryStack', VPCStackInstance.default_vpc);
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-});
+// Initializing DocumentDBStack
+const DocumentDBStackInstance = new DocumentDBStack(app, 'DocumentDBStack', VPCStackInstance.default_vpc);
+
+// Initializing DMSStack
+// TODO: pass Redshift secret ARN to DMS RedshiftFactoryStackInstance.clusters[0].secret?.secretName + 'Function';
+const DMSStackInstance = new DMSStack(app, 'DMSStack', VPCStackInstance.default_vpc);
+
+app.synth();
